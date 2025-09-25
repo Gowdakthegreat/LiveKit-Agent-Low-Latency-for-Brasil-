@@ -19,7 +19,7 @@ def main():
     config = AGENTS_CONFIG[agent_name]
     instructions = config["instructions"]
     voice_id = config["voice_id"]
-    model = config.get("model", "eleven_turbo_v2") # Pega o modelo ou usa um padrão
+    model = config.get("model", "eleven_flash_v2_5") # Pega o modelo ou usa um padrão
 
     print(f"\nIniciando o agente '{agent_name}' no modo console...")
     print("A conversa começará em breve. Para sair, aperte Ctrl + C.")

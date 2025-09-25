@@ -2,7 +2,7 @@
 name = "vendor-platform"
 version = "1.0.0"
 description = "Plataforma de backend para orquestração de Agentes de Voz com IA."
-authors = ["Pedro <seuemail@exemplo.com>"]
+authors = ["Gowdak"]
 readme = "README.md"
 packages = [{include = "src"}]
 

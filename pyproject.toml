@@ -1,45 +1,30 @@
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "agent-starter-python"
+[tool.poetry]
+name = "vendor-platform"
 version = "1.0.0"
-description = "Simple voice AI assistant built with LiveKit Agents for Python"
-requires-python = ">=3.9"
+description = "Plataforma de backend para orquestração de Agentes de Voz com IA."
+authors = ["Pedro <seuemail@exemplo.com>"]
+readme = "README.md"
+packages = [{include = "src"}]
 
-dependencies = [
-    "livekit-agents[openai,turn-detector,silero,cartesia,deepgram]~=1.2",
-    "livekit-plugins-noise-cancellation~=0.2",
-    "python-dotenv",
-    "livekit-plugins-elevenlabs (>=1.2.11,<2.0.0)",
-]
+[tool.poetry.dependencies]
+python = ">=3.10"
+livekit-agents = ">=0.6.0"
+python-dotenv = "^1.0.1"
+livekit-plugins-elevenlabs = "^0.2.0"
+fastapi = "^0.111.0"
+uvicorn = {extras = ["standard"], version = "^0.29.0"}
+click = "^8.1.7"
+requests = "^2.31.0"
+livekit-api = "^1.1.2"
+numpy = "^1.26.4"
+ten-vad = {git = "https://github.com/TEN-framework/ten-vad.git"}
 
-[dependency-groups]
-dev = [
-    "pytest",
-    "pytest-asyncio",
-    "ruff",
-]
+[tool.poetry.scripts]
+iniciar-servidor = "cli:iniciar_servidor"
+novo-agente = "cli:novo_agente"
+iniciar-agente = "cli:iniciar_agente"
+listar-agentes = "cli:listar_agentes"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-dir]
-"" = "src"
-
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
-
-[tool.ruff]
-line-length = 88
-target-version = "py39"
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "B", "A", "C4", "UP", "SIM", "RUF"]
-ignore = ["E501"]  # Line too long (handled by formatter)
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

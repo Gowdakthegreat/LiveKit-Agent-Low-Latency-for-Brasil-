@@ -18,7 +18,7 @@ async def agent_entrypoint(ctx: JobContext):
     # Lê a personalidade do ambiente, que pode ser definida pelo test_console.py ou pelo agent_manager.py
     instructions = os.environ.get("AGENT_INSTRUCTIONS", "Você é um assistente padrão.")
     voice_id = os.environ.get("AGENT_VOICE_ID", "mPDAoQyGzxBSkE0OAOKw")
-    model = os.environ.get("AGENT_MODEL", "eleven_turbo_v2")
+    model = os.environ.get("AGENT_MODEL", "eleven_flash_v2_5")
 
     session = AgentSession(
         llm=openai.LLM(model="gpt-4o-mini"),

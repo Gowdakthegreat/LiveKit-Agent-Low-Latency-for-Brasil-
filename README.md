@@ -1,111 +1,80 @@
-<a href="https://livekit.io/">
-  <img src="./.github/assets/livekit-mark.png" alt="LiveKit logo" width="100" height="100">
-</a>
+Vendor - Backend de Agentes de Voz
+Este projeto é uma plataforma de backend para criar, gerenciar e orquestrar múltiplos agentes de IA de voz concorrentes. Pense nele como uma Fábrica de Assistentes de Voz: em vez de ter um único robô, temos um sistema que pode criar e gerenciar vários robôs diferentes, cada um com sua própria personalidade e tarefa.
 
-# LiveKit Agents Starter - Python
+🏛️ Arquitetura do Sistema
+A plataforma é dividida em quatro componentes principais, cada um com uma responsabilidade clara, funcionando como uma equipe em um restaurante.
 
-A complete starter project for building voice AI apps with [LiveKit Agents for Python](https://github.com/livekit/agents).
+📂 main.py - O Recepcionista
+Papel: A porta de entrada do sistema (a API).
 
-The starter project includes:
+Responsabilidade: Expõe os endpoints para o mundo exterior (ex: /agentes/iniciar/{agent_name}). Ele recebe os comandos, mas não sabe como executar a tarefa. Ele apenas delega a ordem para o especialista: o Gerente.
 
-- A simple voice AI assistant based on the [Voice AI quickstart](https://docs.livekit.io/agents/start/voice-ai/)
-- Voice AI pipeline based on [OpenAI](https://docs.livekit.io/agents/integrations/llm/openai/), [Cartesia](https://docs.livekit.io/agents/integrations/tts/cartesia/), and [Deepgram](https://docs.livekit.io/agents/integrations/llm/deepgram/)
-  - Easily integrate your preferred [LLM](https://docs.livekit.io/agents/integrations/llm/), [STT](https://docs.livekit.io/agents/integrations/stt/), and [TTS](https://docs.livekit.io/agents/integrations/tts/) instead, or swap to a realtime model like the [OpenAI Realtime API](https://docs.livekit.io/agents/integrations/realtime/openai)
-- Eval suite based on the LiveKit Agents [testing & evaluation framework](https://docs.livekit.io/agents/build/testing/)
-- [LiveKit Turn Detector](https://docs.livekit.io/agents/build/turns/turn-detector/) for contextually-aware speaker detection, with multilingual support
-- [LiveKit Cloud enhanced noise cancellation](https://docs.livekit.io/home/cloud/noise-cancellation/)
-- Integrated [metrics and logging](https://docs.livekit.io/agents/build/metrics/)
+👔 agent_manager.py - O Gerente da Fábrica
+Papel: O cérebro da operação que gerencia os "funcionários" (agentes).
 
-This starter app is compatible with any [custom web/mobile frontend](https://docs.livekit.io/agents/start/frontend/) or [SIP-based telephony](https://docs.livekit.io/agents/start/telephony/).
+Responsabilidade: Recebe as ordens do main.py. Consulta o config.py para ler o perfil do agente solicitado. Inicia e para os processos dos agentes usando subprocess, garantindo que cada um rode de forma isolada. Ele também mantém uma lista de quem está trabalhando no momento.
 
-## Dev Setup
+📋 config.py - O Arquivo de Funcionários
+Papel: O nosso "banco de dados" de personalidades.
 
-Clone the repository and install dependencies to a virtual environment:
+Responsabilidade: Armazena as "fichas" de cada tipo de agente. Define as instructions (personalidade), voice_id (a voz), e outras configurações específicas para cada agente que a fábrica pode construir.
 
-```console
-cd agent-starter-python
-uv sync
-```
+🤖 src/agent.py - O Funcionário (O Template do Agente)
+Papel: É o agente de voz em si, o trabalhador que executa a tarefa.
 
-Set up the environment by copying `.env.example` to `.env.local` and filling in the required values:
+Responsabilidade: Contém a lógica de um agente genérico: sabe como se conectar ao LiveKit, como usar o STT (reconhecimento de fala), o LLM (cérebro) e o TTS (síntese de voz). Ele é um "template" que, ao ser iniciado pelo Gerente, recebe uma personalidade do config.py e se transforma no agente específico (ex: Luigi do restaurante).
 
-- `LIVEKIT_URL`: Use [LiveKit Cloud](https://cloud.livekit.io/) or [run your own](https://docs.livekit.io/home/self-hosting/)
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
-- `OPENAI_API_KEY`: [Get a key](https://platform.openai.com/api-keys) or use your [preferred LLM provider](https://docs.livekit.io/agents/integrations/llm/)
-- `DEEPGRAM_API_KEY`: [Get a key](https://console.deepgram.com/) or use your [preferred STT provider](https://docs.livekit.io/agents/integrations/stt/)
-- `CARTESIA_API_KEY`: [Get a key](https://play.cartesia.ai/keys) or use your [preferred TTS provider](https://docs.livekit.io/agents/integrations/tts/)
+🌊 Fluxo de Execução: Do Pedido ao Agente Ativo
+Quando você usa a API para iniciar um agente, o seguinte fluxo acontece:
 
-You can load the LiveKit environment automatically using the [LiveKit CLI](https://docs.livekit.io/home/cli/cli-setup):
+O Pedido: Você acessa http://127.0.0.1:8000/docs, encontra o endpoint POST /agentes/{agent_name}/iniciar, insere restaurante_luigi e clica em "Execute".
 
-```bash
-lk app env -w .env.local
-```
+A Recepção (main.py): A API recebe seu pedido. Ela imediatamente chama a função start_agent do Gerente, passando a ordem: "inicie o restaurante_luigi".
 
-## Run the agent
+A Ação do Gerente (agent_manager.py): O gerente recebe a ordem, abre o config.py, lê as instruções e a voz do Luigi.
 
-Before your first run, you must download certain models such as [Silero VAD](https://docs.livekit.io/agents/build/turns/vad/) and the [LiveKit turn detector](https://docs.livekit.io/agents/build/turns/turn-detector/):
+A Execução (src/agent.py): O gerente executa um novo processo de terminal (subprocess) que roda o src/agent.py. Ele "injeta" a personalidade do Luigi nesse processo através de variáveis de ambiente.
 
-```console
-uv run python src/agent.py download-files
-```
+O Resultado: O agent.py, agora "vestido" de Luigi, executa sua lógica, se conecta ao LiveKit e fica pronto para trabalhar. Você vê os logs dele aparecendo no seu terminal principal.
 
-Next, run this command to speak to your agent directly in your terminal:
+A Confirmação: O gerente avisa ao main.py que o processo foi iniciado, e a API te retorna uma mensagem de sucesso.
 
-```console
-uv run python src/agent.py console
-```
+🚀 Como Rodar o Projeto
+Setup Inicial
 
-To run the agent for use with a frontend or telephony, use the `dev` command:
+Clone o repositório.
 
-```console
-uv run python src/agent.py dev
-```
+Crie o ambiente virtual e instale as dependências com poetry install.
 
-In production, use the `start` command:
+Configuração
 
-```console
-uv run python src/agent.py start
-```
+Crie uma cópia do arquivo env.example e renomeie para .env.local.
 
-## Frontend & Telephony
+Preencha todas as chaves de API necessárias (LIVEKIT_*, OPENAI_*, etc.).
 
-Get started quickly with our pre-built frontend starter apps, or add telephony support:
+Executando o Servidor
 
-| Platform | Link | Description |
-|----------|----------|-------------|
-| **Web** | [`livekit-examples/agent-starter-react`](https://github.com/livekit-examples/agent-starter-react) | Web voice AI assistant with React & Next.js |
-| **iOS/macOS** | [`livekit-examples/agent-starter-swift`](https://github.com/livekit-examples/agent-starter-swift) | Native iOS, macOS, and visionOS voice AI assistant |
-| **Flutter** | [`livekit-examples/agent-starter-flutter`](https://github.com/livekit-examples/agent-starter-flutter) | Cross-platform voice AI assistant app |
-| **React Native** | [`livekit-examples/voice-assistant-react-native`](https://github.com/livekit-examples/voice-assistant-react-native) | Native mobile app with React Native & Expo |
-| **Android** | [`livekit-examples/agent-starter-android`](https://github.com/livekit-examples/agent-starter-android) | Native Android app with Kotlin & Jetpack Compose |
-| **Web Embed** | [`livekit-examples/agent-starter-embed`](https://github.com/livekit-examples/agent-starter-embed) | Voice AI widget for any website |
-| **Telephony** | [📚 Documentation](https://docs.livekit.io/agents/start/telephony/) | Add inbound or outbound calling to your agent |
+No terminal, com o ambiente virtual ativo, rode o comando:
 
-For advanced customization, see the [complete frontend guide](https://docs.livekit.io/agents/start/frontend/).
+Bash
 
-## Tests and evals
+poetry run uvicorn main:app --reload
+Interagindo com a API
 
-This project includes a complete suite of evals, based on the LiveKit Agents [testing & evaluation framework](https://docs.livekit.io/agents/build/testing/). To run them, use `pytest`.
+Abra seu navegador no endereço: http://127.0.0.1:8000/docs
 
-```console
-uv run pytest
-```
+Use a interface interativa para iniciar, parar e verificar o status dos seus agentes.
 
-## Using this template repo for your own project
-
-Once you've started your own project based on this repo, you should:
-
-1. **Check in your `uv.lock`**: This file is currently untracked for the template, but you should commit it to your repository for reproducible builds and proper configuration management. (The same applies to `livekit.toml`, if you run your agents in LiveKit Cloud)
-
-2. **Remove the git tracking test**: Delete the "Check files not tracked in git" step from `.github/workflows/tests.yml` since you'll now want this file to be tracked. These are just there for development purposes in the template repo itself.
-
-3. **Add your own repository secrets**: You must [add secrets](https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-what-your-workflow-does/using-secrets-in-github-actions) for `OPENAI_API_KEY` or your other LLM provider so that the tests can run in CI.
-
-## Deploying to production
-
-This project is production-ready and includes a working `Dockerfile`. To deploy it to LiveKit Cloud or another environment, see the [deploying to production](https://docs.livekit.io/agents/ops/deployment/) guide.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+🗺️ Estrutura de Pastas
+agent-starter-python/
+|
+├── .venv/
+├── src/
+|   ├── agent.py
+|   └── __init__.py
+|
+├── .env.local
+├── agent_manager.py
+├── config.py
+├── main.py
+└── pyproject.toml

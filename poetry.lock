@@ -1367,6 +1367,21 @@ livekit-agents = {version = ">=1.2.11", extras = ["codecs"]}
 numpy = ">=1.26"
 
 [[package]]
+name = "livekit-plugins-elevenlabs"
+version = "1.2.11"
+description = "Agent Framework plugin for voice synthesis with ElevenLabs' API."
+optional = false
+python-versions = ">=3.9.0"
+groups = ["main"]
+files = [
+    {file = "livekit_plugins_elevenlabs-1.2.11-py3-none-any.whl", hash = "sha256:27f67ad7a96862fc301f3b9e861214685dc9f897fa814512b73156608e7fa29f"},
+    {file = "livekit_plugins_elevenlabs-1.2.11.tar.gz", hash = "sha256:43743b1ead0739463f9c3600dc360db7dbff3528c6de8faa1c29fac3ad00ed4f"},
+]
+
+[package.dependencies]
+livekit-agents = {version = ">=1.2.11", extras = ["codecs"]}
+
+[[package]]
 name = "livekit-plugins-noise-cancellation"
 version = "0.2.5"
 description = "Livekit plugin for noise cancellation of inbound AudioStream"
@@ -3540,4 +3555,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9"
-content-hash = "041319531d302bad1da1171b88bc0e01214ad8d852f75cd60378a9526e4837c5"
+content-hash = "451cba0abc2efd309e1e7dfd8f1e2437ac493a7fe8f6c04884d52cfeb9cd36f7"

@@ -1,61 +1,67 @@
-# main.py
+# main.py (Versão com criação de agente via JSON)
+import uuid
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel # Importamos a ferramenta para criar "formulários"
+from livekit.api import AccessToken, VideoGrants
 
-# --- Modelo de Dados ---
-# Usamos Pydantic para definir um "formulário" para os dados do agente.
-# Isso garante que a API sempre receberá os dados corretos.
-class AgentConfig(BaseModel):
-    nome: str = Field(..., description="O nome único para o seu agente.")
-    instructions: str = Field(..., description="As instruções de personalidade e tarefa do agente (o prompt).")
-    voice_id: str = Field(..., description="O ID da voz do ElevenLabs a ser usada.")
+load_dotenv(".env.local")
 
-# --- "Banco de Dados" em Memória ---
-# Para começar, vamos guardar os agentes que você criar em um dicionário.
-# Ele será resetado toda vez que o servidor reiniciar.
-agentes_db = {}
+# --- Modelo de Dados (Nosso "Formulário" Padrão) ---
+class AgentDefinition(BaseModel):
+    nome: str
+    instructions: str
+    voice_id: str
 
+# Nosso "banco de dados" em memória para as definições de agentes
+AGENT_DEFINITIONS = {} 
 
-# --- Configuração da API ---
+import agent_manager
+
 app = FastAPI(
-    title="Vendor - Backend",
-    description="API para criar e gerenciar agentes de voz dinamicamente.",
-    version="0.2.0",
+    title="VAPI Brasileira - Plataforma Dinâmica",
+    version="1.1.0",
 )
 
+# --- Endpoints da API (Atualizados) ---
 
-# --- Endpoints da API ---
+@app.post("/definir_agente")
+def definir_agente(agent_def: AgentDefinition): # <--- MUDANÇA AQUI
+    """
+    Define a 'receita' de um novo agente, recebendo os dados em um pacote JSON.
+    """
+    AGENT_DEFINITIONS[agent_def.nome] = agent_def.dict() # Armazenamos o dicionário
+    return {"message": f"Agente '{agent_def.nome}' definido com sucesso.", "definicao": agent_def}
 
-@app.post("/agentes", status_code=201)
-def criar_agente(config: AgentConfig):
-    """
-    Cria a definição de um novo agente e a salva em nosso "banco de dados".
-    """
-    if config.nome in agentes_db:
-        raise HTTPException(status_code=400, detail="Um agente com este nome já existe.")
-    
-    agentes_db[config.nome] = config
-    return {"message": f"Agente '{config.nome}' criado com sucesso!", "config": config}
+@app.get("/definicoes")
+def listar_definicoes():
+    return AGENT_DEFINITIONS
 
-@app.get("/agentes")
-def listar_agentes():
-    """
-    Lista os nomes de todos os agentes que foram criados.
-    """
-    return {"agentes_criados": list(agentes_db.keys())}
+@app.post("/conectar/{agent_name}")
+def conectar_com_agente(agent_name: str, user_identity: str = "usuario_humano"):
+    if agent_name not in AGENT_DEFINITIONS:
+        raise HTTPException(status_code=404, detail="Agente não definido. Use o endpoint /definir_agente primeiro.")
 
-@app.get("/agentes/{nome_do_agente}")
-def obter_agente(nome_do_agente: str):
-    """
-    Retorna a configuração detalhada de um agente específico.
-    """
-    if nome_do_agente not in agentes_db:
-        raise HTTPException(status_code=404, detail="Agente não encontrado.")
-    return agentes_db[nome_do_agente]
+    config = AGENT_DEFINITIONS[agent_name]
+    livekit_api_key = os.environ.get("LIVEKIT_API_KEY")
+    livekit_api_secret = os.environ.get("LIVEKIT_API_SECRET")
+    livekit_url = os.environ.get("LIVEKIT_URL")
+    room_name = f"conversa-{agent_name}-{uuid.uuid4()}"
 
-# Futuramente, ativaremos estes endpoints:
-# @app.post("/agentes/{nome_do_agente}/iniciar")
-# def iniciar_agente(nome_do_agente: str): ...
+    agent_token = AccessToken(livekit_api_key, livekit_api_secret) \
+        .with_identity(f"agent-{agent_name}") \
+        .with_grants(VideoGrants(room_join=True, room=room_name))
 
-# @app.post("/agentes/{nome_do_agente}/parar")
-# def parar_agente(nome_do_agente: str): ...
+    agent_manager.start_agent(agent_name, config["instructions"], config["voice_id"])
+
+    user_token = AccessToken(livekit_api_key, livekit_api_secret) \
+        .with_identity(user_identity) \
+        .with_grants(VideoGrants(room_join=True, room=room_name))
+
+    return {
+        "message": "Sala criada e agente iniciado. Use estes dados para se conectar.",
+        "livekit_url": livekit_url,
+        "room_name": room_name,
+        "user_token": user_token.to_jwt()
+    }
